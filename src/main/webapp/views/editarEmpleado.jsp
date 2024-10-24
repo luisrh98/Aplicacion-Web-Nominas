@@ -3,17 +3,22 @@
 <html>
 <head>
     <title>Editar Empleado</title>
+    <link rel="stylesheet" type="text/css" href="css/style.css"> <!-- Enlace al archivo CSS -->
 </head>
 <body>
     <h2>Editar Empleado</h2>
-    <form action="empleados?action=actualizar" method="post">
+    <form action="empresa?action=actualizar" method="post">
         <input type="hidden" name="dni" value="${empleado.dni}" />
 
         <label for="nombre">Nombre:</label>
         <input type="text" id="nombre" name="nombre" value="${empleado.nombre}" required /><br/>
 
         <label for="sexo">Sexo:</label>
-        <input type="text" id="sexo" name="sexo" value="${empleado.sexo}" required /><br/>
+    	<select id="sexo" name="sexo" required>
+        	<option value="">Seleccione...</option>
+        	<option value="M">Masculino</option>
+        	<option value="F">Femenino</option>
+    	</select><br><br>
 
         <label for="categoria">Categoría:</label>
         <input type="number" id="categoria" name="categoria" value="${empleado.categoria}" required /><br/>

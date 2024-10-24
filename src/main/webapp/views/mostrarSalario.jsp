@@ -3,18 +3,18 @@
 <html>
 <head>
     <title>Salario del Empleado</title>
+    <link rel="stylesheet" type="text/css" href="css/style.css"> <!-- Enlace al archivo CSS -->
 </head>
 <body>
     <h2>Salario del Empleado</h2>
     <c:choose>
-        <c:when test="${not empty salario}">
+        <c:when test="${salario!=0}">
             <p>El salario del empleado con DNI <strong>${dni}</strong> es: <strong>${salario}</strong></p>
         </c:when>
         <c:otherwise>
             <p>No se encontró un empleado con el DNI <strong>${dni}</strong>.</p>
         </c:otherwise>
     </c:choose>
-    <a href="buscarSalario.jsp">Buscar otro salario</a> <!-- Opción para buscar otro -->
-    <a href="index.jsp">Volver al inicio</a> <!-- Opción para volver -->
+    <a href="index.jsp" class="button">Volver al inicio</a> <!-- Opción para volver -->
 </body>
 </html>

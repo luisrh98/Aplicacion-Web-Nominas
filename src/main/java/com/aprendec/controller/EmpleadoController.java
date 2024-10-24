@@ -9,12 +9,13 @@ import javax.servlet.http.HttpServletResponse;
 import com.aprendec.dao.EmpleadosDAO;
 import com.aprendec.excepciones.DatosNoCorrectosException;
 import com.aprendec.model.Empleado;
+import com.aprendec.model.Nomina;
 
 import java.io.IOException;
 import java.sql.SQLException;
 import java.util.List;
 
-@WebServlet("/empleados")
+@WebServlet("/empresa")
 public class EmpleadoController extends HttpServlet {
 
     private EmpleadosDAO empleadosDAO;
@@ -27,6 +28,10 @@ public class EmpleadoController extends HttpServlet {
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
         String action = request.getParameter("action");
+        if (action == null) {
+            response.sendRedirect("index.jsp");
+            return;
+        }
         switch (action) {
             case "listar":
 			try {
@@ -66,6 +71,20 @@ public class EmpleadoController extends HttpServlet {
                 break;
             case "editar":
                 mostrarFormularioEditarEmpleado(request, response);  // Nueva acción
+                break;
+            case "crearEmpleado":
+                mostrarFormularioCrearEmpleado(request, response);
+                break;
+            case "eliminar":
+                try {
+                    eliminarEmpleado(request, response);
+                } catch (SQLException e) {
+                    e.printStackTrace();
+                    response.sendRedirect("error.jsp");
+                } catch (DatosNoCorrectosException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
                 break;
             default:
                 response.sendRedirect("index.jsp");
@@ -125,6 +144,25 @@ public class EmpleadoController extends HttpServlet {
 				e.printStackTrace();
 			}  // Nueva acción para actualizar el empleado
                 break;
+            case "eliminar":
+                try {
+                    eliminarEmpleado(request, response);
+                } catch (SQLException e) {
+                    e.printStackTrace();
+                    response.sendRedirect("error.jsp");
+                } catch (DatosNoCorrectosException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+                break;
+            case "agregar":
+                try {
+                    agregarEmpleado(request, response);
+                } catch (DatosNoCorrectosException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+                break;
             default:
                 response.sendRedirect("index.jsp");
                 break;
@@ -150,13 +188,6 @@ public class EmpleadoController extends HttpServlet {
         String sexo = request.getParameter("sexo");
         String categoriaStr = request.getParameter("categoria");
         String anyosStr = request.getParameter("anyos");
-        
-        System.out.println("Nombre: " + nombre);
-        System.out.println("DNI: " + dni);
-        System.out.println("Sexo: " + sexo);
-        System.out.println("Categoría (String): " + categoriaStr);
-        System.out.println("Años (String): " + anyosStr);
-        
         
         Integer categoria = null;
         Integer anyos = null;
@@ -193,23 +224,23 @@ public class EmpleadoController extends HttpServlet {
         
     }
     
-    //Mostrar form
+    
+ // Método para actualizar los datos del empleado
     private void mostrarFormularioEditarEmpleado(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
         String dni = request.getParameter("dni");
         if (dni != null && !dni.isEmpty()) {
-            Empleado empleado = empleadosDAO.obtenerEmpleadoPorDni(dni); // Método que obtiene el empleado
-			if (empleado != null) {
-			    request.setAttribute("empleado", empleado);
-			    request.getRequestDispatcher("/views/editarEmpleado.jsp").forward(request, response);
-			} else {
-			    response.sendRedirect("listar.jsp");
-			}
+            Empleado empleado = empleadosDAO.obtenerEmpleadoPorDni(dni); // Método que obtiene el empleado por DNI
+            if (empleado != null) {
+                request.setAttribute("empleado", empleado);
+                request.getRequestDispatcher("/views/editarEmpleado.jsp").forward(request, response);
+            } else {
+                response.sendRedirect("listar.jsp"); // Redirigir si no se encuentra el empleado
+            }
         } else {
-            response.sendRedirect("listar.jsp");
+            response.sendRedirect("listar.jsp"); // Redirigir si no se proporciona DNI
         }
     }
     
- // Método para actualizar los datos del empleado
     private void actualizarEmpleado(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException, DatosNoCorrectosException {
         String dni = request.getParameter("dni");
         String nombre = request.getParameter("nombre");
@@ -221,7 +252,7 @@ public class EmpleadoController extends HttpServlet {
             Empleado empleado = new Empleado(nombre, dni, sexo, categoria, anyos);
             boolean actualizado = empleadosDAO.actualizarEmpleado(empleado); // Actualizar en la BD
             if (actualizado) {
-                response.sendRedirect("empleados?action=listar");  // Redirigir a la lista de empleados
+                response.sendRedirect("empresa?action=listar");  // Redirigir a la lista de empleados
             } else {
                 response.sendRedirect("error.jsp");
             }
@@ -230,5 +261,74 @@ public class EmpleadoController extends HttpServlet {
             response.sendRedirect("error.jsp");
         }
     }
+    
+    //Eliminar empleado
+    private void eliminarEmpleado(HttpServletRequest request, HttpServletResponse response) throws SQLException, IOException, DatosNoCorrectosException {
+        String dni = request.getParameter("dni"); // Obtener el DNI desde la solicitud
+        if (dni != null && !dni.isEmpty()) {
+            boolean eliminado = empleadosDAO.eliminarEmpleado(dni); // Llama al nuevo método que acepta el DNI
+            if (eliminado) {
+                response.sendRedirect("empresa?action=listar"); // Redirigir a la lista de empleados
+            } else {
+                response.sendRedirect("error.jsp"); // Redirigir en caso de que no se elimine el empleado
+            }
+        } else {
+            response.sendRedirect("error.jsp"); // Redirigir si no se proporciona DNI
+        }
+    }
+    
+    private void agregarEmpleado(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException, DatosNoCorrectosException {
+        String nombre = request.getParameter("nombre");
+        String dni = request.getParameter("dni");
+        String sexo = request.getParameter("sexo");
+        Integer categoria = 1; // Valor por defecto
+        Integer anyos = 0; // Valor por defecto
+
+        // Verificar si se proporcionan categoría y años y manejar posibles excepciones
+        String categoriaParam = request.getParameter("categoria");
+        String anyosParam = request.getParameter("anyos");
+
+        try {
+            // Asignar el valor de categoría si se proporciona
+            if (categoriaParam != null && !categoriaParam.trim().isEmpty()) {
+                categoria = Integer.parseInt(categoriaParam);
+            }
+        } catch (NumberFormatException e) {
+            // Manejo de excepciones: si hay un error al convertir, mantener el valor por defecto
+            categoria = 1; // O maneja el error según sea necesario
+        }
+
+        try {
+            // Asignar el valor de años si se proporciona
+            if (anyosParam != null && !anyosParam.trim().isEmpty()) {
+                anyos = Integer.parseInt(anyosParam);
+            }
+        } catch (NumberFormatException e) {
+            // Manejo de excepciones: si hay un error al convertir, mantener el valor por defecto
+            anyos = 0; // O maneja el error según sea necesario
+        }
+
+        try {
+            Empleado empleado = new Empleado(nombre, dni, sexo, categoria, anyos); // Constructor completo
+
+            boolean agregado = empleadosDAO.agregarEmpleado(empleado);
+            if (agregado) {
+                // Calcular sueldo y agregarlo a la tabla nomina
+                int sueldo = Nomina.sueldo(empleado);
+                empleadosDAO.agregarSueldo(empleado.getDni(), sueldo); // Método que agrega el sueldo a la tabla nomina
+                response.sendRedirect("empresa?action=listar"); // Redirigir a la lista de empleados
+            } else {
+                response.sendRedirect("error.jsp");
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+            response.sendRedirect("error.jsp");
+        }
+    }
+    
+    private void mostrarFormularioCrearEmpleado(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+        request.getRequestDispatcher("/views/crearEmpleado.jsp").forward(request, response);
+    }
+    
     
 }

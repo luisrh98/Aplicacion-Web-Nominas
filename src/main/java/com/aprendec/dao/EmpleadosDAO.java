@@ -3,6 +3,7 @@ package com.aprendec.dao;
 import com.aprendec.conexion.Conexion;  // Asegúrate de importar tu clase de conexión
 import com.aprendec.excepciones.DatosNoCorrectosException;
 import com.aprendec.model.Empleado;
+import com.aprendec.model.Nomina;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -57,24 +58,6 @@ public class EmpleadosDAO {
         return salario;
     }
 
-    // Modificar datos del empleado
-    public boolean modificarEmpleado(Empleado empleado) {
-        String sql = "UPDATE empleados SET categoria = ?, anyos = ? WHERE dni = ?";
-        
-        try (Connection connection = Conexion.getConnection();
-             PreparedStatement ps = connection.prepareStatement(sql)) {
-             
-            ps.setInt(1, empleado.getCategoria());
-            ps.setInt(2, empleado.getAnyos());
-            ps.setString(3, empleado.getDni());
-            
-            int affectedRows = ps.executeUpdate();
-            return affectedRows > 0;
-        } catch (SQLException e) {
-            e.printStackTrace();
-            return false;
-        }
-    }
     
     //Buscar empleado por dni
     
@@ -148,8 +131,6 @@ public class EmpleadosDAO {
         consultaFinal.append("\nCategoría: " + (categoria != null ? categoria : "No especificado"));
         consultaFinal.append("\nAños de experiencia: " + (anyos != null ? anyos : "No especificado"));
 
-        System.out.println(consultaFinal.toString());
-
         return empleados;
     }
     
@@ -157,20 +138,80 @@ public class EmpleadosDAO {
     
     public static boolean actualizarEmpleado(Empleado empleado) throws SQLException {
         String sql = "UPDATE empleados SET nombre = ?, sexo = ?, categoria = ?, anyos = ? WHERE dni = ?";
+        String sql2 = "UPDATE nomina SET sueldo = ? WHERE dni = ?";
 
         try (Connection conn = Conexion.getConnection(); 
-             PreparedStatement stmt = conn.prepareStatement(sql)) {
+             PreparedStatement stmt = conn.prepareStatement(sql);
+             PreparedStatement stmt2 = conn.prepareStatement(sql2)) {
 
             stmt.setString(1, empleado.getNombre());
             stmt.setString(2, empleado.getSexo());
             stmt.setInt(3, empleado.getCategoria());
             stmt.setInt(4, empleado.getAnyos());
             stmt.setString(5, empleado.getDni());
-
+            
             int filasActualizadas = stmt.executeUpdate();
+            
+            if (filasActualizadas > 0) {
+                int sueldo = Nomina.sueldo(empleado); // Calcula el sueldo
+                stmt2.setInt(1, sueldo); // Establece el sueldo
+                stmt2.setString(2, empleado.getDni()); // Añade el DNI para la cláusula WHERE
+
+                stmt2.executeUpdate();
+            }
+
+            
             return filasActualizadas > 0; // Retorna true si se actualizaron filas
         }
+        
+        
     }
-     
+    
+    public static boolean eliminarEmpleado(String dni) throws SQLException {
+        String sql = "DELETE FROM empleados WHERE dni = ?";
+
+        try (Connection conn = Conexion.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+
+            stmt.setString(1, dni); // Asignar el DNI directamente
+
+            int filasEliminadas = stmt.executeUpdate();
+
+            return filasEliminadas > 0; // Retorna verdadero si se eliminó al menos un registro
+        }
+    }
+    
+    public static boolean agregarEmpleado(Empleado empleado) throws SQLException {
+        String sql = "INSERT INTO empleados (nombre, dni, sexo, categoria, anyos) VALUES (?, ?, ?, ?, ?)";
+        
+        try (Connection conn = Conexion.getConnection(); 
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+
+            // Establecer los parámetros del PreparedStatement
+            stmt.setString(1, empleado.getNombre());
+            stmt.setString(2, empleado.getDni());
+            stmt.setString(3, empleado.getSexo());
+            stmt.setInt(4, empleado.getCategoria());
+            stmt.setInt(5, empleado.getAnyos());
+
+            // Ejecutar la inserción
+            int filasInsertadas = stmt.executeUpdate();
+            return filasInsertadas > 0; // Retorna true si se insertó al menos una fila
+        }
+    }  
+    
+    public boolean agregarSueldo(String dni, int sueldo) throws SQLException {
+        String sql = "INSERT INTO nomina (dni, sueldo) VALUES (?, ?)";
+
+        try (Connection conn = Conexion.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+
+            stmt.setString(1, dni);
+            stmt.setInt(2, sueldo);
+
+            int filasInsertadas = stmt.executeUpdate();
+            return filasInsertadas > 0; // Retorna true si se insertó al menos una fila
+        }
+    }
     
 }

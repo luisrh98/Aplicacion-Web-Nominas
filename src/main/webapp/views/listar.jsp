@@ -3,10 +3,11 @@
 <html>
 <head>
     <title>Lista de Empleados</title>
+    <link rel="stylesheet" type="text/css" href="css/style.css"> <!-- Enlace al archivo CSS -->
 </head>
 <body>
     <h2>Empleados Registrados</h2>
-    <table border="1">
+    <table>
         <tr>
             <th>Nombre</th>
             <th>DNI</th>
@@ -24,5 +25,8 @@
             </tr>
         </c:forEach>
     </table>
+    <a href="index.jsp" class="button">Volver al inicio</a>
+    <!-- Botón para crear nuevo empleado -->
+    <a href="empresa?action=crearEmpleado" class="button">Crear nuevo empleado</a> <!-- Enlace al formulario de creación -->
 </body>
-</html>
+</html> 
